@@ -4,63 +4,114 @@
 #include <unistd.h>
 #include <fcntl.h>
 
-int sep_in(char *s, char c, ssize_t byte)
+int sep_in(char *s, char c, ssize_t byte, int *pos_n)
 {
     int i = 0;
     while (i < byte)
     {
         if (s[i] == c)
+        {
+            *pos_n = i;
             return 1;
+        }
         i++;
     }
     return 0;
 }
 
-char **recur(int n, int fd)
+void ft_memcpy(char *dest, char *src, int n)
 {
-    ssize_t     byte = 0;
+    while (n--)
+        dest[n] = src[n];
+}
+
+ssize_t helper(char *buf, char *buf_static, int *pos_n)
+{
+    int len;
+
+    len = 0;
+    while (buf_static[len])
+        len++;
+    ft_memcpy(buf, buf_static, len);
+    buf[len] = 0;
+    *pos_n = len - 1;
+    buf_static[0] = 0;
+    return len;
+}
+
+char *recur(int fd, char *buf_static, int real_size, int *pos_n)
+{
+    ssize_t     byte;
     char        buf[BUF_SIZE];
     char        *line;
-    char        **res;
 
-    byte = read(fd, buf, BUF_SIZE);
-    if (byte == 0 || sep_in(buf, '\n', byte) || byte == -1)
+    if (*buf_static != 0)
+        byte = helper(buf, buf_static, pos_n);
+    else
     {
-        line = malloc((n + 1) * BUF_SIZE);
-        res = malloc(2 * sizeof(char *));
-        res[0] = line;
-        res[1] = line + n * BUF_SIZE;
-        return res;
+        byte = read(fd, buf, BUF_SIZE);
+        if (byte == 0 || sep_in(buf, '\n', byte, pos_n) || byte == -1)
+        {
+            if(byte == 0 && real_size == 0)
+                return NULL;
+            line = malloc(real_size + byte + 1);
+            *pos_n = *pos_n + real_size;
+            line[real_size + byte] = 0;
+            return (ft_memcpy(line + real_size, buf, byte), line);
+        }
     }
-    res = recur(n + 1, fd);
-    printf("par la");
-    int i = -1;
-    while (++i < byte)
-        res[0][n + i] = buf[i];
-    return res;
+    line = recur(fd, buf_static, real_size + byte, pos_n);
+    return (ft_memcpy(line + real_size, buf, byte), line);
 }
 
 char *gnl(int fd)
 {
-    char        buffer[BUF_SIZE];
     static char buf[BUF_SIZE];
-    char        **line;
+    char        *line;
+    int         pos_n;
+    int         j;
+    const char  trik[BUF_SIZE] = {0};
 
-    if (buf[0] == 0)
+    (void)fd;
+    line = recur(fd, buf, 0, &pos_n);
+    if (line == NULL)
+        return NULL;
+    j = 0;
+    char var = 0;
+    int test = line[pos_n];
+    if (test != 10)
     {
-        printf("ici");
-        line = recur(0, fd);
+        var = test % 10 + 48;
+        write(1, &var, 1);
+        test /= 10;
+        var = test % 10 + 48;
+        write(1, &var, 1);
+        test /= 10;
+        var = test % 10 + 48;
+        write(1, &var, 1);
+        write(1, " terminate ", 11);
     }
-    return (char *)line[0];
+    while(line[++pos_n])
+    {
+        buf[j] = line[pos_n];
+        j++;
+        line[pos_n] = 0;
+    }
+    ft_memcpy(buf + j, (char*)trik, BUF_SIZE - j);
+    return line;
 }
 
 int main()
 {
     int fd;
-    fd = open("text.txt", O_RDONLY);
+    fd = open("test.txt", O_RDONLY);
     char *test;
     test = gnl(fd);
-    printf("%s", test);
-    free(test);
+    while (test != NULL)
+    {
+        printf("%s", test);
+        free(test);
+        test = gnl(fd);
+    }
     close(fd);
 }
