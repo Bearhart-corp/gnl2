@@ -1,4 +1,4 @@
-#define BUF_SIZE 5
+#define BUF_SIZE 10000
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -55,6 +55,8 @@ char *recur(int fd, char *buf_static, int real_size, int *pos_n)
             if(byte == 0 && real_size == 0)
                 return NULL;
             line = malloc(real_size + byte + 1);
+            if (!line)
+                exit(1);
             *pos_n = *pos_n + real_size;
             line[real_size + byte] = 0;
             return (ft_memcpy(line + real_size, buf, byte), line);
@@ -77,21 +79,9 @@ char *gnl(int fd)
     if (line == NULL)
         return NULL;
     j = 0;
-    char var = 0;
-    int test = line[pos_n];
-    if (test != 10)
-    {
-        var = test % 10 + 48;
-        write(1, &var, 1);
-        test /= 10;
-        var = test % 10 + 48;
-        write(1, &var, 1);
-        test /= 10;
-        var = test % 10 + 48;
-        write(1, &var, 1);
-        write(1, " terminate ", 11);
-    }
-    while(line[++pos_n])
+    if (line[pos_n] != '\n')
+        return line;
+    while(line[++pos_n] )
     {
         buf[j] = line[pos_n];
         j++;
