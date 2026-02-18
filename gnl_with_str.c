@@ -1,3 +1,8 @@
+git clone https://github.com/Mathews-Tom/no-magic.git
+cd no-magic
+python 01-foundations/microgpt.py
+
+
 #define BUF_SIZE 4
 #include <stdio.h>
 #include <stdlib.h>
